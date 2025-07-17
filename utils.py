@@ -90,3 +90,17 @@ class LinearScheduler(object):
     '''
     fraction = min(float(t) / self.schedule_timesteps, 1.0)
     return self.initial_p + fraction * (self.final_p - self.initial_p)
+
+
+def dot_scorer(action_emb, item_emb, item_dim):
+    '''
+    @input:
+    - action_emb: (B, i_dim)
+    - item_emb: (B, L, i_dim) or (1, L, i_dim)
+    @output:
+    - score: (B, L)
+    '''
+    # Ensure item_emb has shape (B, L, i_dim)
+    # action_emb: (B, i_dim) --> (B, 1, i_dim)
+    # item_emb: (B, L, i_dim) --> (B, i_dim, L)
+    return (action_emb.unsqueeze(1) @ item_emb.transpose(-1, -2)).squeeze(1)  # (B, L)

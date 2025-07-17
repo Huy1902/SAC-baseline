@@ -3,8 +3,11 @@ import numpy as np
 import torch
 import pandas as pd
 
+from model.GeneralCritic import GeneralCritic
+from facade.OneStageFacade import OneStageFacade
 from environment.RewardFunction import mean_with_cost
 from environment.ML1MEnvironment import ML1MEnvironment
+from model.SASRec import SASRec
 from utils import set_random_seed
 
 path_to_data = "dataset/ml1m"
@@ -101,6 +104,54 @@ params['entropy_coef'] = 0.0001
 params['alpha'] = 0.02
 
 env = ML1MEnvironment(params)
-n_user = 2
-users = env.sample_user(n_user, False)
-print(users)
+policy = SASRec(env, params)
+# user = env.sample_user(5)
+# print(user['user_profile'].shape)
+# print(len(user['history'][0]))
+# print(len(user['history_features'][0][0]))
+
+
+# (N)
+candidate_iids = torch.tensor(np.arange(1, env.action_space['item_id'][1] + 1))
+
+# (N, item_dim)
+item_emb = torch.FloatTensor(env.reader.get_item_list_meta(candidate_iids)).to(device)
+
+observation = env.reset()
+
+## test environment + policy
+
+# print(observation)
+
+emb = policy(observation)
+# print(emb.keys())
+
+action_prob = policy.score(emb['action_emb'], item_emb, do_softmax=True)
+# print(action_prob.shape)
+_, indices = torch.topk(action_prob, k = 10, dim = 1)
+# print(indices)
+# print(candidate_iids.shape)
+
+action = candidate_iids[indices].detach()
+
+# print(action)
+action_dict = {
+    'action': action,
+    'action_features': item_emb[indices]
+}
+
+next_observation, immediate_reward, done_mask, info = env.step(action_dict)
+# while not done_mask[0].bool():
+#     print(next_observation['cummulative_reward'])
+#     emb = policy(next_observation)
+#     action_prob = policy.score(emb['action_emb'], item_emb, do_softmax=True)
+#     _, indices = torch.topk(action_prob, k=10, dim=1)
+#     action = candidate_iids[indices].detach()
+#     next_observation, immediate_reward, done_mask, info = env.step(action_dict)
+
+critic = GeneralCritic(policy, params)
+facade = OneStageFacade(env, policy, critic, params)
+
+policy_output = facade.apply_policy(observation, policy)
+# print((policy_output['action_prob'] == 1e-8).sum().item())
+print(policy_output['action'])

@@ -31,7 +31,6 @@ class ML1MEnvironment(BaseEnv):
   def reset(self, params = {'batch_size': 1, 'empty_history': True}):
       self.empty_history_flag = params['empty_history'] if 'empty_history' in params else True
       BS = params['batch_size']
-      observation = {'batch_size': BS}
       if 'sample' in params:
           sample_info = params['sample']
       else:
