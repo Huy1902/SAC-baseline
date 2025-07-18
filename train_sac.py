@@ -13,8 +13,9 @@ from agent.SAC import SAC
 from utils import set_random_seed
 
 
-path_to_data = "dataset/ml1m/"
-path_to_output = "output/ml1m/"
+path_to_data = os.path.join(os.getcwd(), "dataset/ml1m/")
+path_to_output = os.path.join(os.getcwd(), "output/ml1m/")
+print(path_to_data, path_to_output)
 wandb.login(key =os.getenv("WANDB_LOGIN"))
 cuda = 0
 if cuda >= 0 and torch.cuda.is_available():
@@ -23,7 +24,6 @@ if cuda >= 0 and torch.cuda.is_available():
     device = f"cuda:{cuda}"
 else:
     device = "cpu"
-
 item_info = np.load(os.path.join(path_to_data, "item_info.npy"))
 user_info = np.load(os.path.join(path_to_data, "user_info.npy"))
 train = pd.read_csv(os.path.join(path_to_data, "train.csv"), sep="@")
