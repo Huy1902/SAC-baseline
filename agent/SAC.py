@@ -127,6 +127,8 @@ class SAC(BaseAgent):
         self.training_history['actor_loss'].append(actor_loss.item())
         self.training_history.setdefault('alpha_loss', []).append(alpha_loss.item())
         self.training_history.setdefault('alpha', []).append(self.alpha.item())
+        self.training_history['target_q'].append(target_q.mean().item())
+        self.training_history['q1'].append(q1.mean().item())
 
         return {"step_loss": (0.5 * (critic1_loss + critic2_loss).item(), actor_loss.item(), alpha_loss.item())}
 
