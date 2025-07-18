@@ -15,7 +15,7 @@ from utils import set_random_seed
 
 path_to_data = os.path.join(os.getcwd(), "dataset/ml1m/")
 path_to_output = os.path.join(os.getcwd(), "output/ml1m/")
-print(path_to_data, path_to_output)
+# print(path_to_data, path_to_output)
 wandb.login(key =os.getenv("WANDB_LOGIN"))
 cuda = 0
 if cuda >= 0 and torch.cuda.is_available():
@@ -36,7 +36,7 @@ params['val'] = test
 params['item_meta'] = item_info
 params['user_meta'] = user_info
 
-params['n_worker'] = 0
+params['n_worker'] = 4
 params['max_seq_len'] = 50
 
 params['loss_type'] = 'bce'
@@ -50,8 +50,6 @@ params['batch_size'] = 128
 params['seed'] = 26
 params['epoch'] = 2
 params['dropout_rate'] = 0.2
-params['model_path'] = os.path.join(path_to_output,
-                          f"env/ml1m_user_env_lr{params['lr']}_reg{params['l2_coef']}.model")
 params['model_path'] = os.path.join(path_to_output,
                           f"env/ml1m_user_env_lr{params['lr']}_reg{params['l2_coef']}.model")
 
@@ -84,11 +82,11 @@ params['with_eval'] = False
 
 params['episode_batch_size'] = 32
 params['batch_size'] = 64
-params['actor_lr'] = 0.00001
-params['critic_lr'] = 5e-4
+params['actor_lr'] = 1e-4
+params['critic_lr'] = 1e-4
 params['actor_decay'] = 0.00001
 params['critic_decay'] = 0.00001
-params['target_mitigate_coef'] = 0.01
+params['target_mitigate_coef'] = 1e-3
 params['n_item'] = 3952
 
 config = params.copy()

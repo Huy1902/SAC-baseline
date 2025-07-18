@@ -25,7 +25,7 @@ class SAC(BaseAgent):
         self.batch_size = params['batch_size']
         self.episode_batch_size = params['episode_batch_size']
 
-        self.training_history = {"critic_loss": [], "actor_loss": [], 'alpha_loss': [], 'alpha': []}
+        self.training_history = {"critic_loss": [], "actor_loss": [], 'alpha_loss': [], 'alpha': [], 'target_q': [], 'q1': [], 'q': []}
 
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=params['actor_lr'],
                                                 weight_decay=params['actor_decay'])
@@ -82,7 +82,7 @@ class SAC(BaseAgent):
         q1 = self.critic1(feed_dict)['q'].gather(-1, policy_output['action'] - 1).mean(-1)
         q2 = self.critic2(feed_dict)['q'].gather(-1, policy_output['action'] - 1).mean(-1)
 
-        print(q1.shape, q2.shape, target_q.shape)
+        # print(q1.shape, q2.shape, target_q.shape)
         critic1_loss = F.mse_loss(q1, target_q)
         critic2_loss = F.mse_loss(q2, target_q)
 
