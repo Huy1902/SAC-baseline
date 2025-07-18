@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import pandas as pd
 
-from model.GeneralCritic import GeneralCritic
+from model.QValueNetwork import QValueNetwork
 from facade.OneStageFacade import OneStageFacade
 from environment.RewardFunction import mean_with_cost
 from environment.ML1MEnvironment import ML1MEnvironment
@@ -103,6 +103,8 @@ params['entropy_coef'] = 0.0001
 
 params['alpha'] = 0.02
 
+params['n_item'] = 3952
+
 env = ML1MEnvironment(params)
 policy = SASRec(env, params)
 # user = env.sample_user(5)
@@ -149,9 +151,47 @@ next_observation, immediate_reward, done_mask, info = env.step(action_dict)
 #     action = candidate_iids[indices].detach()
 #     next_observation, immediate_reward, done_mask, info = env.step(action_dict)
 
-critic = GeneralCritic(policy, params)
+critic = QValueNetwork(policy, params)
 facade = OneStageFacade(env, policy, critic, params)
 
-policy_output = facade.apply_policy(observation, policy)
+policy_output = facade.apply_policy(next_observation, policy)
 # print((policy_output['action_prob'] == 1e-8).sum().item())
-print(policy_output['action'])
+next_prob = policy_output['action_prob']
+next_log_prob = torch.log(next_prob)
+
+
+critic1 = QValueNetwork(policy, params)
+critic2 = QValueNetwork(policy, params)
+next_state_emb = policy(next_observation)['state_emb']
+# print(next_observation.keys())
+feed_dict = dict()
+feed_dict['state_emb'] = next_state_emb
+next_q1 = critic1(feed_dict)
+next_q2 = critic2(feed_dict)
+next_q = torch.min(next_q1['q'], next_q2['q'])
+log_alpha = torch.zeros(1, requires_grad=True, device=device)
+alpha = log_alpha.exp()
+print(observation.keys())
+next_v = (next_prob * (next_q - alpha * next_log_prob)).sum(-1).unsqueeze(-1)
+print(alpha * next_log_prob)
+print(next_q)
+print(next_q - alpha*next_log_prob)
+
+print(next_prob.shape)
+print(next_q.shape)
+
+next_policy_output = facade.apply_policy(next_observation, policy)
+next_prob = next_policy_output['action_prob']
+next_log_prob = torch.log(next_prob)
+next_state_emb = policy(next_observation)['state_emb']
+# print(next_observation.keys())
+feed_dict = dict()
+feed_dict['state_emb'] = next_state_emb
+next_q1 = critic1(feed_dict)
+next_q2 = critic2(feed_dict)
+next_q = torch.min(next_q1['q'], next_q2['q'])
+next_v = (next_prob * (next_q - alpha * next_log_prob)).sum(-1).unsqueeze(-1)
+print(immediate_reward, done_mask)
+print(next_v)
+target_q = immediate_reward + 0.9 * (~done_mask) * next_v
+print(target_q)
