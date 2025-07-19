@@ -21,6 +21,9 @@ class SAC(BaseAgent):
         self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
         self.alpha = self.log_alpha.exp()
 
+        self.update_target_freq = params['update_target_every_n_step']
+        self.update_counter= 0
+
         self.tau = params['target_mitigate_coef']
         self.batch_size = params['batch_size']
         self.episode_batch_size = params['episode_batch_size']
@@ -117,11 +120,13 @@ class SAC(BaseAgent):
 
         self.alpha = self.log_alpha.exp()
 
+        self.update_counter += 1
         # Target update
-        for param, target_param in zip(self.critic1.parameters(), self.critic1_target.parameters()):
-            target_param.data.copy_(self.tau * param.data + (1. - self.tau) * target_param.data)
-        for param, target_param in zip(self.critic2.parameters(), self.critic2_target.parameters()):
-            target_param.data.copy_(self.tau * param.data + (1. - self.tau) * target_param.data)
+        if self.update_counter % self.update_target_freq == 0:
+            for param, target_param in zip(self.critic1.parameters(), self.critic1_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1. - self.tau) * target_param.data)
+            for param, target_param in zip(self.critic2.parameters(), self.critic2_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1. - self.tau) * target_param.data)
 
         self.training_history['critic_loss'].append(0.5 * (critic1_loss + critic2_loss).item())
         self.training_history['actor_loss'].append(actor_loss.item())
